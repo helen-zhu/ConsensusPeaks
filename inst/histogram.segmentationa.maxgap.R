@@ -32,7 +32,7 @@ rel.entropy = function(h, p, a, b) {
 plot.segments = function(x, s = NULL, threshold = 0, ...) {
   index = seq_along(x)
   plot(x, type = "h", ...)
-  
+
   if(!is.null(s)) {
     points(s, x[s], col = "orange")
   }
@@ -55,14 +55,14 @@ calc.prob.diff = function(h, p, a, b){
 meaningful.interval = function(h, p, a, b, N, L){
   relative.entropy = rel.entropy(h, p, a, b)
   prob.diff = calc.prob.diff(h, p, a, b)
-  relative.entropy >= (1/N)*log(L*(L+1)/2) && prob.diff
+  c(mint = relative.entropy >= (1/N)*log(L*(L+1)/2) && prob.diff, entropy = relative.entropy)
 }
 
 # Meaningful gap
 meaningful.gap = function(h, p, a, b, N, L){
   relative.entropy = rel.entropy(h, p, a, b)
   prob.diff = calc.prob.diff(h, p, a, b)
-  relative.entropy >= (1/N)*log(L*(L+1)/2) && !prob.diff
+  c(mgap = relative.entropy >= (1/N)*log(L*(L+1)/2) && !prob.diff, entropy = relative.entropy)
 }
 
 # Test Cases --------------------------------------------------------------
@@ -93,7 +93,7 @@ mint = do.call(rbind, lapply(1:nrow(todo), function(i) {
     N = sum(x),
     L = length(x)
   )
-}))  
+}))
 mgap = do.call(rbind, lapply(1:nrow(todo), function(i) {
   meaningful.gap(
     h = x/sum(x),
@@ -103,15 +103,20 @@ mgap = do.call(rbind, lapply(1:nrow(todo), function(i) {
     N = sum(x),
     L = length(x)
   )
-})) 
+}))
 df = cbind(todo, mint, mgap)
 df = df[order(df$Var1, df$Var2),]
 df$mint = as.numeric(df$mint)
 df$mgap = as.numeric(df$mgap)
+df$scaled_entropy = (df$entropy - min(df$entropy)) / (max(df$entropy) - min(df$entropy))
+
+# mint.cond = df$mint > 0
+# plotting.mint <- matrix(NA, nrow = sum(mint.cond), ncol = 35)
+# plotting.mint
 
 # Create A Heatmap Looking For Meaningful Segments
-plotting.mint = acast(df, Var1 ~ Var2, value.var = "mint")
-plotting.mgap = acast(df, Var1 ~ Var2, value.var = "mgap")
+# plotting.mint = acast(df, Var1 ~ Var2, value.var = "mint")
+# plotting.mgap = acast(df, Var1 ~ Var2, value.var = "mgap")
 
 bp = create.barplot(
   Freq ~ Var1,
@@ -125,45 +130,80 @@ bp = create.barplot(
   ylab.cex = 1
 )
 
-hm.int = create.heatmap(
-  plotting.mint,
-  clustering.method = "none",
-  ylab.label = "Meaningful Intervals",
-  xaxis.cex = 0.8,
-  yaxis.cex = 0.8,
-  ylab.cex = 1,
-  xaxis.lab = colnames(plotting.mint),
-  yaxis.lab = rownames(plotting.mint),
-  xaxis.rot = F,
-  colour.scheme = c("white", "black"),
-  same.as.matrix = T,
-  print.colour.key = F
+rgb2col = function(rgbmat){
+  ProcessColumn = function(col){
+    rgb(rgbmat[1, col],
+        rgbmat[2, col],
+        rgbmat[3, col],
+        maxColorValue = 255)
+  }
+  sapply(1:ncol(rgbmat), ProcessColumn)
+}
+
+seg.int.data = df[df$mint > 0, ]
+seg.int.data$index = 1:nrow(seg.int.data)
+seg.int = create.segplot(
+  formula = index ~ Var1 + Var2,
+  data = seg.int.data,
+  segments.col = rgb2col(t(colorRamp(c("blue", "orange"))(seg.int.data$scaled_entropy))),
+  xlab.label = '',
+  ylab.label = '',
+  yaxis.lab = NULL,
+  xaxis.lab = NULL
 )
 
-hm.gap = create.heatmap(
-  plotting.mgap,
-  clustering.method = "none",
-  ylab.label = "Meaningful Gaps",
-  xaxis.cex = 0.8,
-  yaxis.cex = 0.8,
-  ylab.cex = 1,
-  xaxis.lab = colnames(plotting.mgap),
-  yaxis.lab = rownames(plotting.mgap),
-  xaxis.rot = F,
-  colour.scheme = c("white", "black"),
-  same.as.matrix = T,
-  print.colour.key = F
+seg.gap.data = df[df$mgap > 0, ]
+seg.gap.data$index = 1:nrow(seg.gap.data)
+seg.gap = create.segplot(
+  formula = index ~ Var1 + Var2,
+  data = seg.gap.data,
+  segments.col = rgb2col(t(colorRamp(c("blue", "orange"))(seg.gap.data$scaled_entropy))),
+  xlab.label = '',
+  ylab.label = '',
+  yaxis.lab = NULL
 )
+# hm.int = create.heatmap(
+#   plotting.mint,
+#   clustering.method = "none",
+#   ylab.label = "Meaningful Intervals",
+#   xaxis.cex = 0.8,
+#   yaxis.cex = 0.8,
+#   ylab.cex = 1,
+#   xaxis.lab = colnames(plotting.mint),
+#   yaxis.lab = rownames(plotting.mint),
+#   xaxis.rot = F,
+#   colour.scheme = c("white", "black"),
+#   same.as.matrix = T,
+#   print.colour.key = F
+# )
 
-filename = "~/Desktop/Meaningful.Segments.pdf"
-pdf(filename, height = 12, width = 8)
+# hm.gap = create.heatmap(
+#   plotting.mgap,
+#   clustering.method = "none",
+#   ylab.label = "Meaningful Gaps",
+#   xaxis.cex = 0.8,
+#   yaxis.cex = 0.8,
+#   ylab.cex = 1,
+#   xaxis.lab = colnames(plotting.mgap),
+#   yaxis.lab = rownames(plotting.mgap),
+#   xaxis.rot = F,
+#   colour.scheme = c("white", "black"),
+#   same.as.matrix = T,
+#   print.colour.key = F
+# )
+
+filename = "plots/Meaningful.Segments.pdf"
+#pdf(filename, height = 12, width = 8)
 create.multipanelplot(
-  plot.objects = list(bp, hm.int, hm.gap),
+  plot.objects = list(bp, seg.int, seg.gap),
   plot.objects.heights = c(1, 4, 4),
   y.spacing = -1,
-  ylab.label = "Start",
-  xlab.label = "End",
+  ylab.label = "Segments",
+  xlab.label = "Index",
   ylab.cex = 2,
-  xlab.cex = 2
+  xlab.cex = 2,
+  height = 12,
+  width = 8,
+  filename = filename
 )
-dev.off()
+#dev.off()
