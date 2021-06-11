@@ -199,13 +199,13 @@ filename = "plots/Meaningful.Segments.pdf"
 #pdf(filename, height = 12, width = 8)
 create.multipanelplot(
   plot.objects = list(bp, maximal.heatmap),
-  plot.objects.heights = c(1, 0.05),
+  plot.objects.heights = c(1, 0.1),
   y.spacing = -1,
   ylab.label = "Segments",
   xlab.label = "Index",
   ylab.cex = 2,
   xlab.cex = 2,
-  height = 12,
+  height = 6,
   width = 8,
   filename = filename
 )
