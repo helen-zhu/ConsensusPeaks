@@ -1,4 +1,4 @@
-
+library(ConsensusPeaks)
 library(isotone)
 library(ggplot2)
 library(BoutrosLab.plotting.general)
@@ -62,7 +62,8 @@ meaningful.interval = function(h, p, a, b, N, L){
 meaningful.gap = function(h, p, a, b, N, L){
   relative.entropy = rel.entropy(h, p, a, b)
   prob.diff = calc.prob.diff(h, p, a, b)
-  c(mgap = relative.entropy >= (1/N)*log(L*(L+1)/2) && !prob.diff, entropy = relative.entropy)
+  mgap = (relative.entropy >= (1/N)*log(L*(L+1)/2) && !prob.diff) || (all(h == 0))
+  c(mgap = mgap, entropy = relative.entropy)
 }
 
 # Test Cases --------------------------------------------------------------
@@ -195,7 +196,7 @@ maximal.heatmap <- create.heatmap(
   axes.lwd = 0
 )
 
-filename = "plots/Meaningful.Segments.pdf"
+filename = "plots/Meaningful.Segments.png"
 #pdf(filename, height = 12, width = 8)
 create.multipanelplot(
   plot.objects = list(bp, maximal.heatmap),

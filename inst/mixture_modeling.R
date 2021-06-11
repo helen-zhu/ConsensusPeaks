@@ -22,5 +22,8 @@ plot.segments(x2.hist, s2)
 N <- length(x2)
 y <- x2
 input_data = list(N = N, y = y)
-mixture_fit <- stan(file='models/mixture_model.stan', data=input_data, chains=4, iter = 1e3)
+mixture_fit <- stan(file='inst/models/unif_norm_mixture.stan', data=input_data, chains=4, iter = 1e3)
 mixture_fit
+
+
+##
