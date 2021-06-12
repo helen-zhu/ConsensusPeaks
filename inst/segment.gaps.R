@@ -74,7 +74,7 @@ find.all.meaningful.gap = function(x) {
   # df$scaled_entropy = (df$entropy - min(df$entropy, na.rm = T)) / (max(df$entropy, na.rm = T) - min(df$entropy, na.rm = T))
 
   seg.gap.data = df[df$mgap > 0 & !is.na(df$mgap), ]
-  seg.gap.data$index = 1:nrow(seg.gap.data)
+  # seg.gap.data$index = 1:nrow(seg.gap.data)
 
   maximal.meaningful(seg.gap.data)
 }
@@ -86,22 +86,42 @@ meaningful.gaps.local = function(x, seg.points) {
     x.sub = x[seg.points[i-1]:seg.points[i]]
 
     max.gaps = find.all.meaningful.gap(x.sub)
-    max.gaps[, c('Var1','Var2')] <- max.gaps[, c('Var1','Var2')] + seg.points[i-1]
-    max.gaps$seg.start = seg.points[i-1]
-    max.gaps$seg.end = seg.points[i]
-    max.gaps
+    if(nrow(max.gaps) > 0) {
+      max.gaps[, c('Var1','Var2')] <- max.gaps[, c('Var1','Var2')] + seg.points[i-1]
+      max.gaps$seg.start = seg.points[i-1]
+      max.gaps$seg.end = seg.points[i]
+      max.gaps
+    }
   })
 
   max.gaps <- do.call(rbind.data.frame, max.gaps.list)
   max.gaps
 }
 
-maximal.gaps.multiplot = function(x, seg.points, max.gaps, ...) {
+find.new.segments = function(gaps.df) {
+  new.segments = c()
+  for(i in rownames(gaps.df)) {
+    r = gaps.df[i, ]
+    # Have a large gap
+    if(r$Var2 - r$Var1 > 1) {
+      left.diff = abs(r$seg.start - r$Var1)
+      right.diff = abs(r$seg.end-r$Var2)
+      if(left.diff < right.diff && right.diff > 2) {
+        new.segments = c(new.segments, r$Var2 - 1)
+      } else if(left.diff > right.diff && left.diff > 2){
+        new.segments = c(new.segments, r$Var1 + 1)
+      }
+    }
+  }
+  new.segments
+}
+
+maximal.gaps.multiplot = function(x, seg.points, max.gaps, new.segments = NULL, ...) {
   # Add the gap data to a vector for heatmap
   maximal.data <- rep("none", length(x))
   for(i in rownames(max.gaps)) {
     r = max.gaps[i,]
-    gap.seq = seq(r$Var1, r$Var2)
+    gap.seq = seq(r$Var1, r$Var2) - 1
     maximal.data[gap.seq] <- "gap"
   }
   maximal.data <- factor(maximal.data, levels = c("none", "gap"))
@@ -131,10 +151,16 @@ maximal.gaps.multiplot = function(x, seg.points, max.gaps, ...) {
     axes.lwd = 0
   )
 
-  colour.scheme.segments <- c('white', 'red')
   segment.data <- rep("none", length(x))
   segment.data[seg.points] <- "segment"
-  segment.data <- factor(segment.data, levels = c("none", "segment"))
+  if(is.null(new.segments)) {
+    colour.scheme.segments <- c('white', 'red')
+    segment.data <- factor(segment.data, levels = c("none", "segment"))
+  } else {
+    colour.scheme.segments <- c('white', 'red', 'blue')
+    segment.data[new.segments] <- "extra_segment"
+    segment.data <- factor(segment.data, levels = c("none", "segment", "extra_segment"))
+  }
 
   segments.heatmap <- create.heatmap(
     x = t(as.matrix(as.numeric(segment.data))),
@@ -176,4 +202,49 @@ s = unlist(ftc.helen(x, s = sort(unlist(local.minmax(x)))))
 plot.segments(x, s)
 
 mgaps = meaningful.gaps.local(x, s)
-maximal.gaps.multiplot(x, s, mgaps)
+
+
+filename = "plots/Meaningful.Segments.png"
+maximal.gaps.multiplot(x, s, mgaps, filename = filename)
+
+set.seed(13)
+g1 <- rgamma(100, shape = 2, rate = 1/2)
+n1 <- rnorm(100, mean = 15)
+u1 <- runif(300, max = 5)
+
+x2 <- c(u1, n1)
+tab.x <- obs.to.int.hist(x2)
+s2 = unlist(ftc.helen(tab.x))
+plot.segments(tab.x, s2)
+
+mgaps2 = meaningful.gaps.local(tab.x, s2)
+
+new.segments = find.new.segments(mgaps2)
+filename = "plots/Meaningful.Segments.unif.png"
+maximal.gaps.multiplot(tab.x, s2, mgaps2, new.segments, filename = filename)
+
+mod = list()
+fits = list()
+mod.optim = list()
+jc.optim.multi.distr = list()
+for(i in seq(1, length(s2) - 1)) {
+  seg.start = s2[i]
+  seg.end = s2[i + 1]
+  x.sub <- x2[x2 >= seg.start & x2 <= seg.end]
+  x.adjusted <- (x.sub - seg.start) + 1e-10
+  x.range = seg.start:seg.end
+
+  mod[[i]] = fit.continuous.distributions(
+    x = as.numeric(x.adjusted[x.range]),
+    seg.start = seg.start,
+    seg.end = seg.end,
+    fit.mixtures = c('unif', 'tnorm', 'tgamma', 'tgamma_flip'),
+    max.iterations = 500)
+
+  fits[[i]] = extract.distribution.parameters(
+    mod = mod[[i]],
+    x = x.adjusted)
+
+  mod.optim[[i]] = which(fits[[i]]$aic == min(fits[[i]]$aic))
+  jc.optim.multi.distr[[i]] = fits[[i]]$jc[mod.optim[[i]]]
+}
