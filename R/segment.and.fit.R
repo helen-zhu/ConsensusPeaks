@@ -112,6 +112,7 @@ segment.and.fit = function(
     m = 100)
 
   seg.gr = remove.max.gaps(
+    genepeaksgr = genepeaksgr,
     seg.gr = seg.points.gr,
     max.gaps = max.gaps
   )
