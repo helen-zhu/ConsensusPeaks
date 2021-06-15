@@ -1,3 +1,9 @@
+find.changepoints = function(x){
+  pts = which(diff(x) != 0)
+  pts = unique(sort(c(1, pts, pts + 1, length(x))))
+  pts
+}
+
 # Take a vector of values and get the histogram for integer breaks
 obs.to.int.hist = function(x) {
   table(cut(x, breaks = (floor(min(x)) - 1):(ceiling(max(x)) + 1)))
