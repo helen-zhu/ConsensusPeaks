@@ -1,10 +1,37 @@
 
+library(ConsensusPeaks)
 
 # Preamble ----------------------------------------------------------------
 # FTC function seems to depend heavily on which changepoints are identified
 # This was implemented mainly to speed up the computations
 
 # Preliminary -------------------------------------------------------------
+
+# Simulating Histograms of Bed Region Pile-ups ----------------------------
+
+gtf.path = system.file("extdata", package = "ConsensusPeaks")
+gtf = paste0(gtf.path, "/test.gtf")
+
+peaks = simulate.gaussian.peaks(
+  mu = c(20, 50, 150),
+  sd = c(5, 10, 30),
+  extend.width = c(10, 30, 20),
+  nsamples = c(15, 20, 40),
+  gene = "ENSGXX",
+  gtf = gtf,
+  seed = 123
+)
+
+# Convert Peaks to Histogram
+
+# Calculating Changepoints
+
+# Running FTC
+
+# Plotting Results
+
+# Running FTC -------------------------------------------------------------
+
 
 
 # Testing this
