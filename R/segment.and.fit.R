@@ -251,15 +251,31 @@ segment.and.fit = function(
   S4Vectors::mcols(merged.peaks)$i = 1:length(seg.gr)
   S4Vectors::mcols(merged.peaks)$dist = results$dist
   S4Vectors::mcols(merged.peaks)$params = results$params
-  S4Vectors::mcols(merged.peaks)$mse = results$mse
+  S4Vectors::mcols(merged.peaks)$jc = results$jc
   S4Vectors::mcols(merged.peaks)$name = geneinfo$gene
   merged.peaks = .rna.peaks.to.genome(merged.peaks, geneinfo)
   GenomicRanges::start(merged.peaks) = GenomicRanges::start(merged.peaks)-1
 
   # Generating BED12 File
-  peaks.final = .bed6tobed12(merged.peaks = merged.peaks, id.cols = c("name", "i", "dist"))
+  peaks.final = .bed6tobed12(
+    merged.peaks = merged.peaks,
+    name.id = "name",
+    peak.id = "i",
+    score.id = "jc",
+    distribution.id = "dist",
+    meta.id = "params"
+  )
+
   # P-Value Table
-  sample.pval = .merge.p(peaksgr, merged.peaks = merged.peaks, annotation, all.samples, id.cols = c("name", "i", "dist"))
+  sample.pval = .merge.p(
+    peaksgr = peaksgr,
+    merged.peaks = merged.peaks,
+    annotation = annotation,
+    all.samples = all.samples,
+    name.id = "name",
+    peak.id = "i"
+  )
+
   # Output Table
   output.table = merge(peaks.final, sample.pval, by = "peak", all = T)
 
