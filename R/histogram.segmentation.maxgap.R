@@ -55,9 +55,9 @@ find.all.meaningful.gap = function(x, change.points) {
   # span = seq_along(x)
   # todo = expand.grid(span, span)
   todo = expand.grid(change.points, change.points)
-  todo$Var2 = todo$Var2 - 1 # If there are segments
+  # todo$Var2 = todo$Var2 - 1 # If there are segments
   todo = todo[todo$Var2 > todo$Var1,]
-  
+
   mgap = do.call(rbind, lapply(1:nrow(todo), function(i) {
     meaningful.gap(
       h = x/sum(x),
