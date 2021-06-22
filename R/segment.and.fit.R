@@ -72,7 +72,6 @@ segment.and.fit = function(
   peak.counts = GenomicRanges::start(peak.counts)
 
   p = c()
-  max.gaps = data.frame()
   reduced.gr = GenomicRanges::reduce(genepeaksgr)
   for(i in 1:length(reduced.gr)){
     # cat(i, "\n")
@@ -81,41 +80,23 @@ segment.and.fit = function(
     p.start = GenomicRanges::start(reduced.gr)[i]
     p.end = GenomicRanges::end(reduced.gr)[i]
 
-    # Identifying Changepoints
-    # tmp.gr = genepeaksgr[S4Vectors::subjectHits(GenomicRanges::findOverlaps(reduced.gr[i], genepeaksgr))]
-    # p.init = c(GenomicRanges::start(tmp.gr), GenomicRanges::end(tmp.gr))
-    # p.init = sort(unique(p.init))-p.start+1
-
     # FTC
     x = peak.counts[peak.counts >= p.start & peak.counts <= p.end]
     hist = obs.to.int.hist(x)
     chg.pts = find.changepoints(hist)
     p.tmp = ftc.helen(hist, chg.pts, eps)
 
-    # Max Gap
-    mgaps = meaningful.gaps.local(x = hist, seg.points = p.tmp, change.points = chg.pts)
-    # new.segments = find.new.segments(mgaps)
-
     # Updating
     p.tmp = p.tmp+p.start-1
     p = c(p, p.tmp)
-    mgaps$Var1 = mgaps$Var1+p.start-1
-    mgaps$Var2 = mgaps$Var2+p.start-1
-    max.gaps = rbind(max.gaps, mgaps[,c("Var1", "Var2")])
   }
 
   # Formatting
-  seg.points.gr = generate.peaks.from.split.points(
+  seg.gr = generate.peaks.from.split.points(
     p = p,
     genepeaksgr = genepeaksgr,
     geneinfo = geneinfo,
     m = 100)
-
-  seg.gr = remove.max.gaps(
-    geneinfo = geneinfo,
-    seg.gr = seg.points.gr,
-    max.gaps = max.gaps
-  )
 
   # Fitting different models
   results = data.frame()
