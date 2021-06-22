@@ -43,10 +43,10 @@ segment.and.fit = function(
   # fit.norm_mixture <- fit.mixtures %||% FALSE
 
   # peaksgr
-  peaksgr = ConsensusPeaks:::.retrieve.peaks.as.granges(peaks = peaks, gene = gene, return.df = F)
+  peaksgr = .retrieve.peaks.as.granges(peaks = peaks, gene = gene, return.df = F)
 
   # Get Gene Information
-  geneinfo = ConsensusPeaks:::.get.gene.anno(gene, annotation)
+  geneinfo = .get.gene.anno(gene, annotation)
 
   # Converting to RNA
   genepeaksgr = GenomicRanges::shift(peaksgr, -1*geneinfo$left+1)
@@ -64,59 +64,19 @@ segment.and.fit = function(
   bin.counts = data.frame(GenomicRanges::binnedAverage(bins, peak.coverage, "Coverage"), stringsAsFactors = F)
 
   # Segmenting & Determining which segments are peaks
-  # smooth.coverage = smooth.spline( bin.counts$start, bin.counts$Coverage, spar = 0.3)
-  # p = find.peaks(x = -smooth.coverage$y, m = 150, diff.threshold = 10^-7)
+  smooth.coverage = smooth.spline( bin.counts$start, bin.counts$Coverage, spar = 0.3)
+  p = find.peaks(x = -smooth.coverage$y, m = 150, diff.threshold = 10^-7)
 
   # Tiling Peaks
   peak.counts = unlist(GenomicRanges::tile(genepeaksgr, width = 1))
   peak.counts = GenomicRanges::start(peak.counts)
 
-  p = c()
-  max.gaps = data.frame()
-  reduced.gr = GenomicRanges::reduce(genepeaksgr)
-  for(i in 1:length(reduced.gr)){
-    # cat(i, "\n")
-
-    # Identifying Start & End Coords
-    p.start = GenomicRanges::start(reduced.gr)[i]
-    p.end = GenomicRanges::end(reduced.gr)[i]
-
-    # Identifying Changepoints
-    # tmp.gr = genepeaksgr[S4Vectors::subjectHits(GenomicRanges::findOverlaps(reduced.gr[i], genepeaksgr))]
-    # p.init = c(GenomicRanges::start(tmp.gr), GenomicRanges::end(tmp.gr))
-    # p.init = sort(unique(p.init))-p.start+1
-
-    # FTC
-    x = peak.counts[peak.counts >= p.start & peak.counts <= p.end]
-    hist = ConsensusPeaks:::obs.to.int.hist(x)
-    chg.pts = ConsensusPeaks:::find.changepoints(hist)
-    p.tmp = ConsensusPeaks:::ftc.helen(hist, chg.pts, eps)
-
-    # Max Gap
-    mgaps = ConsensusPeaks:::meaningful.gaps.local(x = hist, seg.points = p.tmp, change.points = chg.pts)
-    # new.segments = find.new.segments(mgaps)
-
-    # Updating
-    p.tmp = p.tmp+p.start-1
-    p = c(p, p.tmp)
-    mgaps$Var1 = mgaps$Var1+p.start-1
-    mgaps$Var2 = mgaps$Var2+p.start-1
-    max.gaps = rbind(max.gaps, mgaps[,c("Var1", "Var2")])
-  }
-
   # Formatting
-  seg.points.gr = ConsensusPeaks:::generate.peaks.from.split.points(
+  seg.gr = generate.peaks.from.split.points(
     p = p,
     genepeaksgr = genepeaksgr,
     geneinfo = geneinfo,
     m = 100)
-
-  seg.gr = ConsensusPeaks:::remove.max.gaps(
-    geneinfo = geneinfo,
-    seg.gr = seg.points.gr,
-    max.gaps = max.gaps,
-    remove.short.segment = 1
-  )
 
   # Fitting different models
   results = data.frame()
