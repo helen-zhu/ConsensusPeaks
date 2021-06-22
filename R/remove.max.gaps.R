@@ -1,5 +1,6 @@
 
-remove.max.gaps = function(geneinfo, seg.gr, max.gaps){
+remove.max.gaps = function(geneinfo, seg.gr, max.gaps, remove.short.segment = 0){
+
   if(nrow(max.gaps) > 0){
 
     # Creating a GenomicRanges Object with replicates of max gap
@@ -13,5 +14,7 @@ remove.max.gaps = function(geneinfo, seg.gr, max.gaps){
     seg.gr = GenomicRanges::setdiff(seg.gr, mgap.gr)
     seg.gr = BiocGenerics::unlist(seg.gr)
   }
+  seg.gr = seg.gr[IRanges::width(seg.gr) > remove.short.segment]
+
   seg.gr
 }
