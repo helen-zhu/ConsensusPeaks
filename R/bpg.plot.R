@@ -94,7 +94,7 @@ bpg.plot = function(
 
   # Plotting Heatmap
   heatmap.data = data.frame(bins, stringsAsFactors = F)
-  heatmap.data = heatmap.data[,c("start", "fitted", "metric")]
+  heatmap.data = heatmap.data[,c("start", "fitted", "jc")]
   heatmap.data = heatmap.data[order(heatmap.data$start),]
 
   hm.fu = BoutrosLab.plotting.general::create.heatmap(
