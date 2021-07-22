@@ -36,9 +36,11 @@ bpg.plot = function(
   col.reference = structure(c("black", "gold", "chartreuse4", "chartreuse3", "darkorange", "darkorchid4"),
                             names = c("coverage", "tnorm", "tgamma", "tgamma_flip", "norm_mixture", "unif"))
   col.numeric = structure(1:5, names = c("tnorm", "tgamma", "tgamma_flip", "norm_mixture", "unif"))
+  lwd.reference = structure(c(1, 2.5, 2.5, 2.5, 2.5, 2.5), names = c("coverage", "tnorm", "tgamma", "tgamma_flip", "norm_mixture", "unif"))
   col.used = unique(lineplot.data[,c("dist", "i")])
   col.used = col.used[order(col.used$i),]
   col.vec = col.reference[col.used$dist]
+  lwd.vec = lwd.reference[col.used$dist]
 
   # Plotting
   sc = BoutrosLab.plotting.general::create.scatterplot(
@@ -58,6 +60,7 @@ bpg.plot = function(
     main.cex = 0,
     # Lines & PCH
     type = c('a'),
+    lwd = lwd.vec,
     # Adding extra points
     add.points = T,
     points.x = points$x,
@@ -81,59 +84,33 @@ bpg.plot = function(
 
   # Adding p-values & segments
   ovl = GenomicRanges::findOverlaps(bins, seg.gr)
-  # bins$p.value = NA
-  # bins$p.value[S4Vectors::queryHits(ovl)] = seg.gr$p.value[S4Vectors::subjectHits(ovl)]
-  bins$i = 0
-  bins$i[S4Vectors::queryHits(ovl)] = seg.gr$i[S4Vectors::subjectHits(ovl)]
-  bins$mse = NA
-  bins$mse[S4Vectors::queryHits(ovl)] = results$mse[S4Vectors::subjectHits(ovl)]
   bins$jc = NA
   bins$jc[S4Vectors::queryHits(ovl)] = results$jc[S4Vectors::subjectHits(ovl)]
 
   # Adding segment fits
   ovl = GenomicRanges::findOverlaps(bins, fitted.seg.gr)
-  bins$fitted.uniform = 0
-  bins$fitted.uniform[S4Vectors::queryHits(ovl)] = 1
+  bins$fitted = 0
+  bins$fitted[S4Vectors::queryHits(ovl)] = col.numeric[results$dist[S4Vectors::subjectHits(ovl)]]
 
   # Plotting Heatmap
   heatmap.data = data.frame(bins, stringsAsFactors = F)
-  heatmap.data = heatmap.data[,c("start", "i", "fitted.uniform", "jc", "mse")]
+  heatmap.data = heatmap.data[,c("start", "fitted", "metric")]
   heatmap.data = heatmap.data[order(heatmap.data$start),]
 
   hm.fu = BoutrosLab.plotting.general::create.heatmap(
-    heatmap.data[,c("fitted.uniform", "fitted.uniform")],
+    heatmap.data[,c("fitted", "fitted")],
     clustering.method = 'none',
     # Plotting Characteristics
     axes.lwd = 1,
     yaxis.tck = 0,
     # Discrete Colours
-    at = seq(-0.5, 1.5, 1),
-    total.colours = 2,
-    colour.scheme = c( 'white', 'lightgrey'),
+    at = seq(-0.5, length(col.reference), 1),
+    total.colours = length(col.reference) + 1,
+    colour.scheme = c('white', col.reference[2:length(col.reference)]),
     # Adding lines for segments
     force.grid.col = TRUE,
     grid.col = TRUE,
     col.lines = c(GenomicRanges::start(fitted.seg.gr), GenomicRanges::end(fitted.seg.gr)),
-    # Colourkey
-    # colourkey.labels.at = seq(0, length(seg.gr)+1, 1),
-    # colourkey.labels = seq(0, length(seg.gr)+1, 1),
-    print.colour.key = F
-  )
-
-  hm.peaks = BoutrosLab.plotting.general::create.heatmap(
-    heatmap.data[,c("i", "i")],
-    clustering.method = 'none',
-    # Plotting Characteristics
-    axes.lwd = 1,
-    yaxis.tck = 0,
-    # Discrete Colours
-    at = seq(-0.5, length(seg.gr)+1, 1),
-    total.colours = length(seg.gr)+1,
-    colour.scheme = c( 'white', BoutrosLab.plotting.general::colour.gradient("firebrick3", length(seg.gr))),
-    # Adding lines for segments
-    force.grid.col = TRUE,
-    grid.col = TRUE,
-    col.lines = c(GenomicRanges::start(seg.gr), GenomicRanges::end(seg.gr)),
     # Colourkey
     # colourkey.labels.at = seq(0, length(seg.gr)+1, 1),
     # colourkey.labels = seq(0, length(seg.gr)+1, 1),
@@ -255,8 +232,8 @@ bpg.plot = function(
   transcript.height = min(3, ncol(transcript.coverage)*0.5) + 0.55
 
   mpp = BoutrosLab.plotting.general::create.multipanelplot(
-    plot.objects = list(sc, hm.fu, hm.peaks, hm.gof, hm.coverage),
-    plot.objects.heights = c(10, 1, 1, 1, transcript.height),
+    plot.objects = list(sc, hm.fu, hm.gof, hm.coverage),
+    plot.objects.heights = c(10, 1, 1, transcript.height),
     y.spacing = -4,
     # Labels
     main = geneinfo$gene,
