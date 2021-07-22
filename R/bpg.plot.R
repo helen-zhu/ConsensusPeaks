@@ -184,12 +184,6 @@ bpg.plot = function(
       lwd = 0.5
     ),
     legend = list(
-      colours = 'lightgrey',
-      labels = 'Fitted',
-      title = expression(bold(underline('Distribution Coverage'))),
-      lwd = 0.5
-    ),
-    legend = list(
       colours = BoutrosLab.plotting.general::colour.gradient("firebrick3", length(seg.gr)),
       labels = as.character(1:length(seg.gr)),
       title = expression(bold(underline('Peaks'))),
